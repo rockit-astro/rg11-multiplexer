@@ -30,19 +30,31 @@
 // Rate limit the status reports to the host PC to 1Hz
 volatile bool update_state = false;
 
-void tick(void)
+void poll_serial(void)
 {
-    if (!update_state)
-        return;
-
-    cli();
-    serial_write(SENSOR1_SAFE ? '0' : '1');
-    serial_write(SENSOR2_SAFE ? '0' : '1');
-    serial_write(SENSOR3_SAFE ? '0' : '1');
-    serial_write('\r');
-    serial_write('\n');
-    update_state = false;
-    sei();
+    while (serial_can_read())
+    {
+        // Pass Vaisala data through to the host
+        uint8_t value = serial_read();
+        serial_write(value);
+        
+        // Inject rain sensor data
+        if (value == '\n')
+        {
+            serial_write('1');
+            serial_write('R');
+            serial_write('0');
+            serial_write(',');
+            serial_write('R');
+            serial_write('S');
+            serial_write('=');
+            serial_write(SENSOR1_SAFE ? '0' : '1');
+            serial_write(SENSOR2_SAFE ? '0' : '1');
+            serial_write(SENSOR3_SAFE ? '0' : '1');
+            serial_write('\r');
+            serial_write('\n');
+        }
+    }
 }
 
 
@@ -60,7 +72,7 @@ int main(void)
 
     sei();
     for (;;)
-        tick();
+        poll_serial();
 }
 
 volatile bool led_active;
@@ -72,6 +84,4 @@ ISR(TIMER1_COMPA_vect)
         BLINKER_LED_ENABLED;
     else
         BLINKER_LED_DISABLED;
-
-    update_state = true;
 }

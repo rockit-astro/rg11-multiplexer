@@ -31,7 +31,7 @@ static volatile uint8_t input_write = 0;
 
 void serial_initialize(void)
 {
-#define BAUD 9600
+#define BAUD 4800
 #include <util/setbaud.h>
     UBRR1H = UBRRH_VALUE;
     UBRR1L = UBRRL_VALUE;
